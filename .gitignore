@@ -4,5 +4,8 @@ node_modules/
 build/
 temp/
 
+uploads/*
+!uploads/.gitkeep
+
 tmp/*
 !tmp/.gitkeep
