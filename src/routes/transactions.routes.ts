@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { getCustomRepository } from 'typeorm';
+import fs from 'fs';
 import multer from 'multer';
 import uploadConfig from '../config/upload';
 
@@ -9,6 +10,7 @@ import TransactionsRepository from '../repositories/TransactionsRepository';
 import CreateTransactionService from '../services/CreateTransactionService';
 import DeleteTransactionService from '../services/DeleteTransactionService';
 import ImportTransactionsService from '../services/ImportTransactionsService';
+import CreateManyTransactionsService from '../services/CreateManyTransactionsService';
 
 const transactionsRouter = Router();
 const upload = multer(uploadConfig);
@@ -37,6 +39,25 @@ transactionsRouter.post('/', async (request, response) => {
   return response.json(transaction);
 });
 
+transactionsRouter.post('/many', async (request, response) => {
+  interface MyTransactions {
+    transactions: {
+      title: string;
+      type: 'income' | 'outcome';
+      value: number;
+      category: string;
+    }[];
+  }
+  const { transactions: transactionsRead }: MyTransactions = request.body;
+
+  const createManyTransaction = new CreateManyTransactionsService();
+  const transactions = await createManyTransaction.execute({
+    transactionsRead,
+  });
+
+  return response.json(transactions);
+});
+
 transactionsRouter.delete('/:id', async (request, response) => {
   const { id } = request.params;
 
@@ -54,6 +75,8 @@ transactionsRouter.post('/import', upload.single('file'), readCSV, async (reques
   const transactions = await importTransaction.execute({
     lines,
   });
+
+  await fs.promises.unlink(request.file.path);
 
   return response.json(transactions);
 });

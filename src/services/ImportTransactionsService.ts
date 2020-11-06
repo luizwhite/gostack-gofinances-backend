@@ -1,7 +1,9 @@
+import AppError from '../errors/AppError';
 import Transaction from '../models/Transaction';
-import CreateTransactionService from './CreateTransactionService';
 
-interface ImportedTransaction {
+import CreateManyTransactionsService from './CreateManyTransactionsService';
+
+interface CSVTransaction {
   title: string;
   type: 'income' | 'outcome';
   value: number;
@@ -17,27 +19,32 @@ class ImportTransactionsService {
   async execute({
     lines: requestParsedData,
   }: LinesDTO): Promise<Transaction[]> {
-    const createTransaction = new CreateTransactionService();
-    const transactions: Transaction[] = [];
+    const transactionsRead: CSVTransaction[] = [];
 
-    for (const line of requestParsedData) {
-      if (line[1] !== 'outcome' && line[1] !== 'income') {
-        throw Error(
-          `Invalid transaction type in line ${requestParsedData.indexOf(line)}`,
-        );
+    requestParsedData.forEach((line, index) => {
+      const [title, type, value, category] = line;
+
+      if (!title || !type || !value || !category) {
+        throw new AppError(`Missing data in line ${index}!`);
+      }
+      if (type !== 'outcome' && type !== 'income') {
+        throw new AppError(`Invalid transaction type in line ${index}`);
       }
 
-      const importedTransaction: ImportedTransaction = {
-        title: line[0],
-        value: parseInt(line[2], 10),
-        type: line[1],
-        category: line[3],
+      const myTransaction: CSVTransaction = {
+        title,
+        value: parseInt(value, 10),
+        type,
+        category,
       };
 
-      const transaction = await createTransaction.execute(importedTransaction);
+      transactionsRead.push(myTransaction);
+    });
 
-      transactions.push(transaction);
-    }
+    const createManyTransactions = new CreateManyTransactionsService();
+    const transactions = await createManyTransactions.execute({
+      transactionsRead,
+    });
 
     return transactions;
   }
