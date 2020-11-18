@@ -49,10 +49,11 @@ class TransactionsRepository extends Repository<Transaction> {
   }
 
   public async getCompleteInfo(): Promise<CompleteInfo> {
-    const transactions = await this.find({
-      relations: ['category'],
-      select: ['id', 'title', 'type', 'value', 'created_at', 'updated_at'],
-    });
+    // const transactions = await this.find({
+    //   relations: ['category'],
+    //   select: ['id', 'title', 'type', 'value', 'created_at', 'updated_at'],
+    // });
+    const transactions = await this.find();
     const balance = await this.getBalance();
 
     const completeInfo = {
